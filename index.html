@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sugi Mobiles</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#f5f4f0;color:#222;}
+#loginScreen{position:fixed;inset:0;background:#1a1a1a;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+#loginScreen.hide{display:none;}
+.login-brand{color:#fff;text-align:center;margin-bottom:30px;}
+.login-brand h1{font-size:24px;letter-spacing:1px;}
+.login-brand p{color:#888;font-size:12px;margin-top:4px;}
+.login-card{background:#fff;border-radius:16px;padding:28px 22px;width:100%;max-width:320px;}
+.login-card h2{text-align:center;font-size:15px;color:#333;margin-bottom:20px;}
+.dots{display:flex;gap:14px;justify-content:center;margin-bottom:22px;}
+.dot{width:14px;height:14px;border-radius:50%;background:#e0e0e0;transition:background .15s;}
+.dot.on{background:#1a1a1a;}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.numpad button{border:1px solid #ddd;border-radius:10px;background:#f9f9f9;font-size:20px;font-weight:600;padding:15px 0;color:#222;cursor:pointer;}
+.numpad button:active{background:#e0e0e0;}
+.ghost{visibility:hidden;}
+.login-err{color:#c0392b;font-size:12px;text-align:center;margin-top:10px;min-height:16px;}
+.change-pin-link{display:block;text-align:center;color:#aaa;font-size:11px;margin-top:14px;cursor:pointer;text-decoration:underline;}
+.login-hint{color:#555;font-size:11px;text-align:center;margin-top:16px;}
+header{background:#1a1a1a;color:#eee;padding:14px 16px 0;position:sticky;top:0;z-index:50;}
+.hrow{display:flex;align-items:center;justify-content:space-between;}
+header h1{font-size:17px;font-weight:700;letter-spacing:.5px;}
+header small{font-size:11px;color:#888;display:block;margin-top:1px;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#888;flex:0 0 auto;}
+.sync-dot.online{background:#4ade80;}
+.sync-dot.saving{background:#facc15;animation:pulse 1s infinite;}
+.sync-dot.offline{background:#f87171;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.stats{display:flex;gap:8px;margin-top:12px;overflow-x:auto;padding-bottom:12px;}
+.stat{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:7px 12px;white-space:nowrap;flex:0 0 auto;}
+.stat .n{font-size:18px;font-weight:800;line-height:1;}
+.stat .l{font-size:10px;color:#aaa;margin-top:1px;}
+main{max-width:700px;margin:0 auto;padding:12px 12px 100px;}
+.toolbar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.toolbar input,.toolbar select{flex:1 1 160px;padding:10px 11px;border:1px solid #ddd;border-radius:8px;font-size:13.5px;background:#fff;color:#222;}
+.export-btn{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;font-weight:600;color:#333;margin-bottom:10px;cursor:pointer;}
+.backup-banner{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;font-size:12.5px;color:#7a5800;}
+.backup-banner button{background:#e6a800;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+.loading-msg{text-align:center;padding:40px;color:#888;font-size:14px;}
+.empty{text-align:center;padding:60px 20px;color:#888;}
+.empty b{display:block;color:#333;font-size:15px;margin-bottom:6px;}
+.card{background:#fff;border:1px solid #e0deda;border-radius:12px;padding:14px;margin-bottom:10px;}
+.card-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;}
+.cname{font-size:15px;font-weight:700;}
+.cmob{font-size:12.5px;color:#666;margin-top:2px;}
+.cmodel{font-size:13px;font-weight:600;margin-top:6px;}
+.ccomplaint{font-size:12.5px;color:#666;margin-top:2px;}
+.badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;white-space:nowrap;flex:0 0 auto;}
+.s-pending{background:#fff3cd;color:#856404;}
+.s-progress{background:#fde8e0;color:#b73a0e;}
+.s-ready{background:#dbeafe;color:#1e40af;}
+.s-delivered{background:#d1fae5;color:#065f46;}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px;margin-top:10px;padding-top:10px;border-top:1px solid #eee;font-size:12px;}
+.meta div span{display:block;font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.3px;margin-bottom:1px;}
+.paid{color:#065f46;font-weight:700;}
+.due{color:#b91c1c;font-weight:700;}
+.actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.actions button{flex:1 1 auto;padding:8px 4px;font-size:12px;font-weight:600;border-radius:7px;border:1px solid #ddd;background:#f5f4f0;cursor:pointer;}
+.actions .abill{color:#1e40af;border-color:#bfdbfe;}
+.actions .awa{color:#065f46;border-color:#a7f3d0;}
+.actions .aedit{color:#374151;}
+.actions .adel{color:#b91c1c;border-color:#fecaca;}
+.fab{position:fixed;right:18px;bottom:22px;width:56px;height:56px;border-radius:50%;background:#c2410c;color:#fff;font-size:28px;border:none;box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;z-index:60;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end;justify-content:center;z-index:100;}
+.overlay.show{display:flex;}
+.sheet{background:#f5f4f0;width:100%;max-width:700px;max-height:92vh;overflow-y:auto;border-radius:16px 16px 0 0;padding:18px 16px 28px;}
+.sheet h2{font-size:16px;margin-bottom:16px;}
+.field{margin-bottom:11px;}
+.field label{display:block;font-size:10.5px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;}
+.field input,.field select,.field textarea{width:100%;padding:10px 11px;border:1px solid #ddd;border-radius:8px;font-size:14px;background:#fff;color:#222;font-family:inherit;}
+.field textarea{min-height:56px;resize:vertical;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sheet-btns{display:flex;gap:10px;margin-top:18px;}
+.sheet-btns button{flex:1;padding:12px;border-radius:9px;font-size:14px;font-weight:700;border:none;cursor:pointer;}
+.btn-save{background:#1a1a1a;color:#fff;}
+.btn-cancel{background:#fff;border:1px solid #ddd !important;color:#333;}
+.pin-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:200;padding:20px;}
+.pin-modal.show{display:flex;}
+.pin-box{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:310px;}
+.pin-box h3{font-size:15px;margin-bottom:14px;}
+.pin-box input{width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:8px;font-size:16px;letter-spacing:4px;text-align:center;margin-bottom:9px;}
+.perr{color:#c0392b;font-size:12px;min-height:16px;margin-bottom:6px;}
+.pbtns{display:flex;gap:8px;}
+.pbtns button{flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #ddd;cursor:pointer;}
+.pbtns .psave{background:#1a1a1a;color:#fff;border:none;}
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:9px 18px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:300;white-space:nowrap;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-brand">
+    <h1>SUGI MOBILES</h1>
+    <p>Service & Customer Database · Thoothukudi</p>
+  </div>
+  <div class="login-card">
+    <h2>Enter your PIN</h2>
+    <div class="dots">
+      <div class="dot" id="d0"></div><div class="dot" id="d1"></div>
+      <div class="dot" id="d2"></div><div class="dot" id="d3"></div>
+    </div>
+    <div class="numpad">
+      <button onclick="pk('1')">1</button><button onclick="pk('2')">2</button><button onclick="pk('3')">3</button>
+      <button onclick="pk('4')">4</button><button onclick="pk('5')">5</button><button onclick="pk('6')">6</button>
+      <button onclick="pk('7')">7</button><button onclick="pk('8')">8</button><button onclick="pk('9')">9</button>
+      <button class="ghost"></button><button onclick="pk('0')">0</button><button onclick="pdel()">⌫</button>
+    </div>
+    <div class="login-err" id="lerr"></div>
+    <span class="change-pin-link" onclick="openPinModal()">Change PIN</span>
+  </div>
+  <div class="login-hint">Default PIN: 1234</div>
+</div>
+
+<div class="pin-modal" id="pinModal">
+  <div class="pin-box">
+    <h3>Change PIN</h3>
+    <input type="password" inputmode="numeric" maxlength="4" id="pc_old" placeholder="Current PIN">
+    <input type="password" inputmode="numeric" maxlength="4" id="pc_new" placeholder="New PIN (4 digits)">
+    <input type="password" inputmode="numeric" maxlength="4" id="pc_conf" placeholder="Confirm new PIN">
+    <div class="perr" id="perr"></div>
+    <div class="pbtns">
+      <button onclick="closePinModal()">Cancel</button>
+      <button class="psave" onclick="doChangePin()">Save</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="hrow">
+    <div><h1>SUGI MOBILES</h1><small>Service & Customer Database · Thoothukudi</small></div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-size:10px;color:#888;" id="syncLabel">Connecting…</span>
+      <div class="sync-dot" id="syncDot"></div>
+    </div>
+  </div>
+  <div class="stats" id="stats"></div>
+</header>
+
+<main>
+  <div class="toolbar">
+    <input type="search" id="searchBox" placeholder="Search name, number or model…">
+    <select id="filterStatus">
+      <option value="">All status</option>
+      <option>Pending</option><option>In Progress</option>
+      <option>Ready</option><option>Delivered</option>
+    </select>
+  </div>
+  <button class="export-btn" onclick="doExport()">⬇ Export backup (CSV + JSON)</button>
+  <div id="banner"></div>
+  <div id="list"><div class="loading-msg">Loading…</div></div>
+</main>
+
+<button class="fab" onclick="openSheet(null)">+</button>
+
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <h2 id="sheetTitle">New service entry</h2>
+    <div class="field"><label>Customer name</label><input id="f_name" type="text"></div>
+    <div class="field"><label>Mobile number</label><input id="f_mobile" type="tel"></div>
+    <div class="field"><label>Mobile model</label><input id="f_model" type="text" placeholder="e.g. Samsung Galaxy M14"></div>
+    <div class="field"><label>Complaint / issue</label><textarea id="f_complaint" placeholder="e.g. Display cracked, not charging"></textarea></div>
+    <div class="row2">
+      <div class="field"><label>Date received</label><input id="f_recv" type="date"></div>
+      <div class="field"><label>Date of delivery</label><input id="f_del" type="date"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Service amount (₹)</label><input id="f_amt" type="number" min="0"></div>
+      <div class="field"><label>Payment status</label>
+        <select id="f_pay"><option>Paid</option><option>Partial</option><option selected>Due</option></select>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Status</label>
+        <select id="f_status">
+          <option selected>Pending</option><option>In Progress</option>
+          <option>Ready</option><option>Delivered</option>
+        </select>
+      </div>
+      <div class="field"><label>Payment method</label><input id="f_paydet" type="text" placeholder="Cash, GPay, etc."></div>
+    </div>
+    <div class="sheet-btns">
+      <button class="btn-cancel" onclick="closeSheet()">Cancel</button>
+      <button class="btn-save" id="saveBtn" onclick="saveEntry()">Save entry</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── JSONBin config ──────────────────────────────
+const BIN_ID   = '6a46049af5f4af5e295208bc';
+const API_KEY  = '$2a$10$SivMWdkOmk4c6B/ytDBakOT00CPiLn/8a0u6z6RyxEIha3jk02aY6';
+const BIN_URL  = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const HEADERS  = {'Content-Type':'application/json','X-Master-Key':API_KEY,'X-Bin-Versioning':'false'};
+// ───────────────────────────────────────────────
+
+const PIN_KEY    = 'sugi_pin';
+const BACKUP_KEY = 'sugi_last_backup';
+const $          = id => document.getElementById(id);
+
+function getPin(){ return localStorage.getItem(PIN_KEY)||'1234'; }
+function setPin(p){ localStorage.setItem(PIN_KEY,p); }
+
+// PIN
+let pinBuf='';
+function pk(k){ if(pinBuf.length>=4)return; pinBuf+=k; updDots(); if(pinBuf.length===4)setTimeout(tryLogin,120); }
+function pdel(){ pinBuf=pinBuf.slice(0,-1); updDots(); $('lerr').textContent=''; }
+function updDots(){ for(let i=0;i<4;i++) $('d'+i).classList.toggle('on',i<pinBuf.length); }
+function tryLogin(){
+  if(pinBuf===getPin()){ $('loginScreen').classList.add('hide'); initApp(); }
+  else { $('lerr').textContent='Wrong PIN. Try again.'; pinBuf=''; updDots(); }
+}
+document.addEventListener('keydown',e=>{
+  if(!$('loginScreen').classList.contains('hide')) return;
+  // keyboard only on desktop when app is open
+});
+
+function openPinModal(){ $('pinModal').classList.add('show'); ['pc_old','pc_new','pc_conf'].forEach(i=>$(i).value=''); $('perr').textContent=''; }
+function closePinModal(){ $('pinModal').classList.remove('show'); }
+function doChangePin(){
+  const old=$('pc_old').value, nw=$('pc_new').value, cf=$('pc_conf').value;
+  if(old!==getPin()){$('perr').textContent='Current PIN is wrong.';return;}
+  if(!/^\d{4}$/.test(nw)){$('perr').textContent='New PIN must be 4 digits.';return;}
+  if(nw!==cf){$('perr').textContent="PINs don't match.";return;}
+  setPin(nw); closePinModal(); showToast('PIN changed!');
+}
+
+// App
+let records=[], editId=null;
+
+function setSyncStatus(s){
+  const dot=$('syncDot'), lbl=$('syncLabel');
+  if(s==='online'){ dot.className='sync-dot online'; lbl.textContent='Synced'; }
+  else if(s==='saving'){ dot.className='sync-dot saving'; lbl.textContent='Saving…'; }
+  else { dot.className='sync-dot offline'; lbl.textContent='Offline'; }
+}
+
+async function loadFromBin(){
+  try{
+    const res = await fetch(BIN_URL, {headers:{'X-Master-Key':API_KEY}});
+    if(!res.ok) throw new Error('Load failed');
+    const data = await res.json();
+    const recs = data.record;
+    if(Array.isArray(recs)) return recs;
+    if(recs && Array.isArray(recs.records)) return recs.records;
+    return [];
+  }catch(e){ throw e; }
+}
+
+async function saveToBin(recs){
+  const res = await fetch(BIN_URL, {
+    method:'PUT',
+    headers:HEADERS,
+    body: JSON.stringify(recs)
+  });
+  if(!res.ok) throw new Error('Save failed');
+}
+
+async function initApp(){
+  $('list').innerHTML='<div class="loading-msg">Loading data…</div>';
+  try{
+    records = await loadFromBin();
+    records.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    setSyncStatus('online');
+    render();
+    checkBackupBanner();
+  }catch(e){
+    setSyncStatus('offline');
+    $('list').innerHTML='<div class="empty"><b>Could not load data</b>Check your internet connection and refresh.</div>';
+  }
+  $('searchBox').addEventListener('input',render);
+  $('filterStatus').addEventListener('change',render);
+}
+
+// Render
+function render(){
+  renderStats();
+  const q=$('searchBox').value.trim().toLowerCase();
+  const sf=$('filterStatus').value;
+  const f=records.filter(r=>{
+    const mq=!q||(r.name||'').toLowerCase().includes(q)||(r.mobile||'').includes(q)||(r.model||'').toLowerCase().includes(q);
+    return mq&&(!sf||r.status===sf);
+  });
+  if(!f.length){
+    $('list').innerHTML=`<div class="empty"><b>${records.length?'Nothing matches':'No entries yet'}</b>${records.length?'Try a different search.':'Tap + to add your first customer.'}</div>`;
+    return;
+  }
+  $('list').innerHTML=f.map(r=>`
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="cname">${esc(r.name||'Unnamed')}</div>
+          <div class="cmob">${esc(r.mobile||'—')}</div>
+          <div class="cmodel">${esc(r.model||'—')}</div>
+          <div class="ccomplaint">${esc(r.complaint||'No complaint noted')}</div>
+        </div>
+        <span class="badge ${bc(r.status)}">${esc(r.status||'Pending')}</span>
+      </div>
+      <div class="meta">
+        <div><span>Received</span>${fd(r.recv)}</div>
+        <div><span>Delivery</span>${fd(r.del)}</div>
+        <div><span>Amount</span>${r.amt?'₹'+Number(r.amt).toLocaleString('en-IN'):'—'}</div>
+        <div><span>Payment</span><span class="${r.pay==='Paid'?'paid':'due'}">${esc(r.pay||'—')}${r.paydet?' · '+esc(r.paydet):''}</span></div>
+      </div>
+      <div class="actions">
+        <button class="abill" onclick="printBill('${r.id}')">🧾 Bill</button>
+        <button class="awa"   onclick="sendWA('${r.id}')">💬 WhatsApp</button>
+        <button class="aedit" onclick="openSheet('${r.id}')">Edit</button>
+        <button class="adel"  onclick="delEntry('${r.id}')">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderStats(){
+  const t=records.length;
+  const ip=records.filter(r=>r.status==='Pending'||r.status==='In Progress').length;
+  const rd=records.filter(r=>r.status==='Ready').length;
+  const du=records.filter(r=>r.pay==='Due'||r.pay==='Partial').length;
+  $('stats').innerHTML=`
+    <div class="stat"><div class="n">${t}</div><div class="l">Total</div></div>
+    <div class="stat"><div class="n">${ip}</div><div class="l">In progress</div></div>
+    <div class="stat"><div class="n">${rd}</div><div class="l">Ready</div></div>
+    <div class="stat"><div class="n">${du}</div><div class="l">Payment due</div></div>`;
+}
+
+function bc(s){ return s==='Pending'?'s-pending':s==='In Progress'?'s-progress':s==='Ready'?'s-ready':s==='Delivered'?'s-delivered':'s-pending'; }
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fd(d){ if(!d)return'—'; const dt=new Date(d+'T00:00:00'); return isNaN(dt)?d:dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
+function uid(){ return 'r'+Date.now()+Math.random().toString(36).slice(2,6); }
+
+// Sheet
+function openSheet(id){
+  editId=id;
+  const r=id?records.find(x=>x.id===id):null;
+  $('sheetTitle').textContent=r?'Edit entry':'New service entry';
+  $('f_name').value=r?r.name||'':'';
+  $('f_mobile').value=r?r.mobile||'':'';
+  $('f_model').value=r?r.model||'':'';
+  $('f_complaint').value=r?r.complaint||'':'';
+  $('f_recv').value=r?r.recv||'':new Date().toISOString().slice(0,10);
+  $('f_del').value=r?r.del||'':'';
+  $('f_amt').value=r?r.amt||'':'';
+  $('f_pay').value=r?r.pay||'Due':'Due';
+  $('f_status').value=r?r.status||'Pending':'Pending';
+  $('f_paydet').value=r?r.paydet||'':'';
+  $('overlay').classList.add('show');
+}
+function closeSheet(){ $('overlay').classList.remove('show'); editId=null; }
+$('overlay').addEventListener('click',e=>{ if(e.target===$('overlay'))closeSheet(); });
+
+async function saveEntry(){
+  const name=$('f_name').value.trim();
+  if(!name){ alert('Please enter customer name.'); return; }
+  const btn=$('saveBtn'); btn.disabled=true; btn.textContent='Saving…';
+  setSyncStatus('saving');
+  const id=editId||uid();
+  const existing=editId?records.find(x=>x.id===editId):null;
+  const rec={
+    id, name, mobile:$('f_mobile').value.trim(),
+    model:$('f_model').value.trim(),
+    complaint:$('f_complaint').value.trim(),
+    recv:$('f_recv').value, del:$('f_del').value,
+    amt:$('f_amt').value, pay:$('f_pay').value,
+    status:$('f_status').value, paydet:$('f_paydet').value.trim(),
+    createdAt:existing?existing.createdAt:Date.now()
+  };
+  if(editId){ records=records.map(r=>r.id===editId?rec:r); }
+  else { records.unshift(rec); }
+  try{
+    await saveToBin(records);
+    closeSheet(); render();
+    setSyncStatus('online');
+    showToast(editId?'Entry updated ✓':'Entry saved ✓');
+  }catch(e){
+    showToast('Save failed — check internet');
+    setSyncStatus('offline');
+  }
+  btn.disabled=false; btn.textContent='Save entry';
+}
+
+async function delEntry(id){
+  if(!confirm('Delete this entry? Cannot be undone.')) return;
+  records=records.filter(r=>r.id!==id);
+  try{
+    await saveToBin(records);
+    render(); showToast('Deleted');
+    setSyncStatus('online');
+  }catch(e){ showToast('Delete failed — check internet'); setSyncStatus('offline'); }
+}
+
+// Bill
+function printBill(id){
+  const r=records.find(x=>x.id===id); if(!r) return;
+  const bn=r.id.slice(-6).toUpperCase();
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bill ${bn}</title>
+  <style>body{font-family:Arial,sans-serif;padding:28px;max-width:460px;margin:0 auto;color:#111;}
+  h1{font-size:20px;margin:0;}.sub{font-size:11px;color:#666;margin-top:2px;}
+  .hd{display:flex;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:16px;}
+  .bm{text-align:right;font-size:12px;color:#444;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  td{padding:6px 0;vertical-align:top;}td.lbl{color:#666;width:44%;}
+  .tot td{border-top:2px solid #111;font-weight:700;font-size:15px;padding-top:10px;}
+  .ft{margin-top:28px;font-size:10.5px;color:#888;text-align:center;border-top:1px solid #ddd;padding-top:10px;}
+  .np{text-align:center;margin-top:16px;}
+  .np button{padding:10px 24px;font-size:14px;border:none;border-radius:8px;background:#111;color:#fff;cursor:pointer;}
+  @media print{.np{display:none;}}</style></head><body>
+  <div class="hd"><div><h1>SUGI MOBILES</h1><div class="sub">Mobile Repair & Service · Thoothukudi</div></div>
+  <div class="bm">Bill # ${bn}<br>${fd(r.recv)||new Date().toLocaleDateString('en-IN')}</div></div>
+  <table>
+    <tr><td class="lbl">Customer name</td><td>${esc(r.name||'—')}</td></tr>
+    <tr><td class="lbl">Mobile number</td><td>${esc(r.mobile||'—')}</td></tr>
+    <tr><td class="lbl">Mobile model</td><td>${esc(r.model||'—')}</td></tr>
+    <tr><td class="lbl">Complaint</td><td>${esc(r.complaint||'—')}</td></tr>
+    <tr><td class="lbl">Date received</td><td>${fd(r.recv)}</td></tr>
+    <tr><td class="lbl">Date of delivery</td><td>${fd(r.del)}</td></tr>
+    <tr><td class="lbl">Status</td><td>${esc(r.status||'—')}</td></tr>
+    <tr><td class="lbl">Payment</td><td>${esc(r.pay||'—')}${r.paydet?' · '+esc(r.paydet):''}</td></tr>
+    <tr class="tot"><td>Total amount</td><td>₹ ${r.amt?Number(r.amt).toLocaleString('en-IN'):'0'}</td></tr>
+  </table>
+  <div class="ft">Thank you for choosing Sugi Mobiles — Computer generated bill.</div>
+  <div class="np"><button onclick="window.print()">Print this bill</button></div>
+  </body></html>`);
+  w.document.close();
+}
+
+// WhatsApp
+function sendWA(id){
+  const r=records.find(x=>x.id===id); if(!r) return;
+  let msg='';
+  if(r.status==='Ready') msg=`Hi ${r.name}, your ${r.model} repair is ready for pickup at Sugi Mobiles. Service amount: ₹${r.amt||0}. Please visit us. Thank you!`;
+  else if(r.status==='Delivered') msg=`Hi ${r.name}, thank you for choosing Sugi Mobiles for your ${r.model} repair. Let us know if you face any issues.`;
+  else msg=`Hi ${r.name}, this is Sugi Mobiles. Your ${r.model} (Issue: ${r.complaint||'service'}) is currently ${r.status||'being repaired'}. We will notify you once ready.`;
+  let ph=(r.mobile||'').replace(/\D/g,'');
+  if(ph.length===10) ph='91'+ph;
+  window.open(`https://wa.me/${ph}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+// Export
+function doExport(){
+  const d=new Date().toISOString().slice(0,10);
+  const h=['Name','Mobile','Model','Complaint','Received','Delivery','Amount','Payment','Pay Method','Status'];
+  const rows=records.map(r=>[r.name,r.mobile,r.model,r.complaint,r.recv,r.del,r.amt,r.pay,r.paydet,r.status]);
+  const e=v=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;
+  const csv=[h.map(e).join(','),...rows.map(row=>row.map(e).join(','))].join('\n');
+  dl(`sugi-backup-${d}.csv`,csv,'text/csv');
+  dl(`sugi-backup-${d}.json`,JSON.stringify(records,null,2),'application/json');
+  localStorage.setItem(BACKUP_KEY,d);
+  checkBackupBanner();
+  showToast('Backup downloaded ✓');
+}
+function dl(name,content,mime){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:mime}));
+  a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+function checkBackupBanner(){
+  const today=new Date().toISOString().slice(0,10);
+  const last=localStorage.getItem(BACKUP_KEY);
+  $('banner').innerHTML=last!==today&&records.length>0?`<div class="backup-banner"><span>⚠️ No backup today — export to keep data safe.</span><button onclick="doExport()">Backup now</button></div>`:'';
+}
+
+function showToast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+</script>
+</body>
+</html>
